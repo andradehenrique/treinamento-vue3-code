@@ -17,7 +17,7 @@
             Crie uma conta
           </button>
           <button
-            class="px-6 py-2 font-bold bg-white rounded-full text-brand-main focus:outline-none"
+            class="px-3 lg:px-6 py-1 lg:py-2 font-bold bg-white rounded-full text-brand-main focus:outline-none"
             @click="() => emit('login')"
           >
             Entrar
