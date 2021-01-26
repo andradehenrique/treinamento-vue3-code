@@ -15,6 +15,6 @@ export function setCurrentUser (user) {
 }
 
 export function setApiKey (apiKey) {
-  const currentUser = { ...state.currentUser, apiKey }
+  const currentUser = { ...state.currentUser, apiKey: [apiKey] }
   state.currentUser = currentUser
 }

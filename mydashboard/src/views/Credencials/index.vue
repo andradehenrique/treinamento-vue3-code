@@ -26,15 +26,18 @@
         v-else
         class="flex py-3 pl-5 mt-2 rounded items-center justify-between bg-brand-gray w-full lg:w-1/2"
       >
-        <span>{{ apiKey }}</span>
-        <div class="flex ml-20 mr-5">
+        <span v-if="state.hasError">Erro ao carregar a apikey</span>
+        <span v-else>{{ apiKey }}</span>
+        <div class="flex ml-20 mr-5" v-if="!state.hasError">
           <icon
+            @click="handleCopy"
             name="copy"
             :color="brandColors.graydark"
             size="24"
             class="cursor-pointer"
           />
           <icon
+            @click="handleGenerateApiKey"
             name="loading"
             :color="brandColors.graydark"
             size="24"
@@ -55,7 +58,8 @@
         v-else
         class="py-3 pl-5 mt-2 rounded items-center bg-brand-gray w-full lg:w-2/3 overflow-x-scroll"
       >
-        <pre>
+        <span v-if="state.hasError">Erro ao carregar o script</span>
+        <pre v-else>
 &lt;script src="https://andradehenrique-feedbacker-widget.netlify.app?api_key={{
             apiKey
           }}"&gt;&lt;/script&gt;</pre
@@ -71,7 +75,10 @@ import ContentLoader from '../../components/ContentLoader'
 import Icon from '../../components/Icon'
 import useStore from '../../hooks/useStore'
 import palette from '../../../palette'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
+import services from '../../services'
+import { setApiKey } from '../../store/user'
+import { useToast } from 'vue-toastification'
 
 export default {
   components: {
@@ -82,18 +89,63 @@ export default {
 
   setup () {
     const store = useStore()
+    const toast = useToast()
     const state = reactive({
+      hasError: false,
       isLoading: false
     })
 
+    watch(
+      () => store.User.currentUser,
+      () => {
+        console.log(store.User.currentUser)
+        if (!store.Global.isLoading && !store.User.currentUser.apiKey) {
+          handleError(true)
+        }
+      }
+    )
+
+    async function handleGenerateApiKey () {
+      try {
+        state.isLoading = true
+        const { data } = await services.users.generateApikey()
+        setApiKey(data.apiKey)
+        state.isLoading = false
+      } catch (error) {
+        handleError(error)
+      }
+    }
+
+    function handleError (error) {
+      state.isLoading = false
+      state.hasError = !!error
+    }
+
+    async function handleCopy () {
+      toast.clear()
+      try {
+        await navigator.clipboard.writeText(store.User.currentUser.apiKey)
+        toast.success('Copiado!')
+      } catch (error) {
+        handleError(error)
+      }
+    }
+
     const apiKey = computed(() => {
-      if (store.User.currentUser.apikey) {
-        return store.User.currentUser.apikey[0]
+      if (store.User.currentUser.apiKey) {
+        return store.User.currentUser.apiKey[0]
       }
       return ''
     })
 
-    return { state, store, brandColors: palette.brand, apiKey }
+    return {
+      state,
+      store,
+      brandColors: palette.brand,
+      apiKey,
+      handleGenerateApiKey,
+      handleCopy
+    }
   }
 }
 </script>
